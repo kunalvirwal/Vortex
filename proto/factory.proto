@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option go_package = "./factory";
+
+package factory;
+
+service ContainerFactory {
+    rpc Apply (RequestBody) returns (BoolResponse) {}
+    rpc Delete (NameHolder) returns (BoolResponse) {}
+    rpc Show (NameHolder) returns (ResponseBody) {}
+    rpc HealthCheck (NameHolder) returns (NameHolder) {}
+}
+
+message RequestBody {
+    bytes data = 1;
+}
+
+message NameHolder {
+    string name = 1;
+}
+
+message BoolResponse {
+    bool success = 1;
+}
+
+message ResponseBody {
+    bytes data = 1;
+}

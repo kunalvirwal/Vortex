@@ -1,0 +1,22 @@
+I
+it should use the docker sdk
+it should be able to create & delete containers  
+it should be able to track if a container is deleted
+it should maintain its own data in an mongo container (we'll see)
+it should detect if its containers are killed and restart them, so it should run schedulers 
+it should have a healthcheck to see if the service is running or not
+
+
+II 
+it must have gRPC connections within cli and main service for healthchecks and responses
+it must integrate with velocity
+it can implement microservices architecture to run on multiple nodes
+
+CLI
+vortex up 
+vortex apply deployment -f ./file.yaml
+vortex show deployment --all
+vortex delete deployment <deployment-name>
+vortex down
+
+ protoc --go_out=./proto/ --go-grpc_out=./proto/ ./proto/factory.proto
