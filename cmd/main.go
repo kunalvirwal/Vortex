@@ -6,6 +6,8 @@ func main() {
 	// healthcheck functions
 	// deployment parsing
 	// gRPC routes
-
-	initSchedulers()
+	InitgRPCListener()
+	InitTracker()
+	// initSchedulers()
+	<-make(chan struct{})
 }

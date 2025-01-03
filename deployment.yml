@@ -1,0 +1,15 @@
+version: Nginx-deployment/v1  # uniquely identifies a deployment
+services:
+  - name: Nginx # name of the service, uniquely identifies a service
+    image: nginx:latest  # image to run in container
+    replicas: 2  # copys of the container to manage
+    env:  # environment variables
+      - PORT : 80
+      - SECRET_KEY : ""
+    HealthCheck: # health check configuration
+      Command: "curl --fail --silent http://localhost:80/ || exit 1" # command to run inside container wrt /, must end in exit code 1 if failing
+      Interval: 30s # interval to run health check
+      Timeout: 5s # timeout for health check to be declared failed
+      retries: 3 # number of retries before declaring container unhealth
+    restartPolicy: Always # Always, OnFailure, Never
+    

@@ -9,13 +9,15 @@ import (
 
 func startService() {
 	path := getPath()
-	cmd := exec.Command(path)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd = exec.Command(path)
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
 		fmt.Println("Error starting the vortex-service:", err)
 		os.Exit(1)
 	}
+	fmt.Println("Started the vortex-service")
+
 }
 
 func getPath() string {
