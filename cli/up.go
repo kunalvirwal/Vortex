@@ -1,13 +1,17 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 )
 
-func startService() {
+func startService(upCmd *flag.FlagSet) {
+
+	upCmd.Parse(os.Args[2:])
+
 	path := getPath()
 	cmd = exec.Command(path)
 	// cmd.Stdout = os.Stdout

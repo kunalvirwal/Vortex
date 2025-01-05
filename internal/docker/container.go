@@ -2,14 +2,16 @@ package docker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/kunalvirwal/Vortex/internal/state"
 	"github.com/kunalvirwal/Vortex/types"
 )
 
-func CreateContainer(cfg types.ContainerConfig) (string, error) {
+func CreateContainer(cfg *types.ContainerConfig) error {
 	// create container
 	ctx := context.Background()
 
@@ -22,17 +24,25 @@ func CreateContainer(cfg types.ContainerConfig) (string, error) {
 	}
 	// envArray := []string{"PORT=80", "SECRET_KEY=123456"}
 
+	var Healthcheck *container.HealthConfig
+
+	if cfg.HealthCheck != nil {
+		Healthcheck = &container.HealthConfig{
+			Test:     []string{"CMD-SHELL", cfg.HealthCheck.Command},
+			Interval: time.Duration(cfg.HealthCheck.Interval) * time.Second,
+			Timeout:  time.Duration(cfg.HealthCheck.Timeout) * time.Second,
+			Retries:  cfg.HealthCheck.Retries,
+		}
+	} else {
+		Healthcheck = nil
+	}
+
 	containerConfig := &container.Config{
 		Image: cfg.Image,
 		// ExposedPorts
 		Env: envArray,
 		// volume
-		Healthcheck: &container.HealthConfig{
-			Test:     []string{"CMD-SHELL", cfg.HealthCheck.Command},
-			Interval: cfg.HealthCheck.Interval * time.Second,
-			Timeout:  cfg.HealthCheck.Timeout * time.Second,
-			Retries:  cfg.HealthCheck.Retries,
-		},
+		Healthcheck: Healthcheck,
 	}
 
 	hostConfig := &container.HostConfig{
@@ -42,8 +52,27 @@ func CreateContainer(cfg types.ContainerConfig) (string, error) {
 
 	containerConf, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, cfg.Name)
 	if err != nil {
-		fmt.Println("Error in creating container", err)
+		return errors.New("Error in creating container: " + err.Error())
 	}
 
-	return containerConf.ID, nil
+	// appends its containerID to its VortexService.ContainerIDs
+	cfg.ID = containerConf.ID
+	for _, service := range state.VortexServices {
+		if service.Service.Name == cfg.Service && service.Deployment == cfg.Deployment {
+			service.ContainerIDs = append(service.ContainerIDs, cfg.ID)
+		}
+	}
+
+	// appends the container to VortexContainers
+	state.VortexContainers = append(state.VortexContainers, cfg)
+	return nil
+}
+
+func StartContainer(containerID string) error {
+	ctx := context.Background()
+	err := cli.ContainerStart(ctx, containerID, container.StartOptions{})
+	if err != nil {
+		return errors.New("Error in starting container: " + err.Error())
+	}
+	return nil
 }

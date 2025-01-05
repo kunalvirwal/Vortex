@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -11,7 +12,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func stopService() {
+func stopService(downCmd *flag.FlagSet) {
+
+	downCmd.Parse(os.Args[2:])
+
 	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		fmt.Println("Error connecting to the vortex-service:", err)
