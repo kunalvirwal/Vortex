@@ -2,12 +2,15 @@ package master
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/kunalvirwal/Vortex/internal/docker"
 	"github.com/kunalvirwal/Vortex/internal/dockmaster"
 	"github.com/kunalvirwal/Vortex/internal/state"
 	"github.com/kunalvirwal/Vortex/internal/utils"
@@ -73,7 +76,7 @@ func (s *server) Apply(ctx context.Context, body *pb.RequestBody) (*pb.BoolRespo
 				g.Go(func() error {
 					return dockmaster.Modify(vService, service)
 				})
-				newServiceArr = utils.RemoveByServiceName(newServiceArr, service)
+				newServiceArr, _ = utils.PopServiceByName(newServiceArr, service.Service.Name)
 				break
 			}
 		}
@@ -95,7 +98,87 @@ func (s *server) Apply(ctx context.Context, body *pb.RequestBody) (*pb.BoolRespo
 		}()
 		return &pb.BoolResponse{Success: false}, err
 	}
+	fmt.Println(state.GetState())
 	return &pb.BoolResponse{Success: true}, nil
+}
+
+func (s *server) Delete(ctx context.Context, body *pb.NameHolder) (*pb.BoolResponse, error) {
+	Name := body.GetName()
+	query := strings.Split(Name, " ")
+
+	// for _, cfg := range state.VortexContainers {
+	// 	fmt.Println(*cfg)
+	// }
+
+	// first remove the deployment, services and containers from the state variables
+	// then delete the containers from docker sdk otherwise tracker will try to restart them
+	// fmt.Printf("%v", query)
+	var rmContainerIDs []string
+
+	if len(query) == 1 {
+
+		// Removing deployment from state
+		var dep *types.Deployment
+		state.VortexDeployments, dep = utils.PopDeployment(state.VortexDeployments, query[0])
+		if dep == nil {
+			return &pb.BoolResponse{Success: false}, errors.New("deployment not found")
+		}
+
+		// Removing services from state
+		var rmServices []*types.VService
+		state.VortexServices, rmServices = utils.PopServicesByDepVersion(state.VortexServices, dep.Version)
+
+		// Removing containers from VortexContainers
+		for _, service := range rmServices {
+			state.VortexContainers = utils.RemoveContainerConfigByService(state.VortexContainers, service)
+			rmContainerIDs = append(rmContainerIDs, service.ContainerIDs...)
+		}
+
+	} else if len(query) == 2 {
+		// Find Deployment
+		var dep *types.Deployment
+		for _, deploy := range state.VortexDeployments {
+			if deploy.Version == query[0] {
+				dep = deploy
+				break
+			}
+		}
+		if dep == nil {
+			return &pb.BoolResponse{Success: false}, errors.New("deployment not found")
+		}
+
+		// Removing service from state
+		var rmService *types.VService
+		state.VortexServices, rmService = utils.PopServiceByName(state.VortexServices, query[1])
+		if rmService == nil {
+			return &pb.BoolResponse{Success: false}, errors.New("service not found")
+		}
+
+		// Removing containers from VortexContainers
+		state.VortexContainers = utils.RemoveContainerConfigByService(state.VortexContainers, rmService)
+		rmContainerIDs = append(rmContainerIDs, rmService.ContainerIDs...)
+
+	} else {
+		return &pb.BoolResponse{Success: false}, errors.New("invalid deployment or service name recieved")
+	}
+	// Delete the containers from docker sdk
+	for _, id := range rmContainerIDs {
+		docker.DeleteContainer(id)
+	}
+
+	return &pb.BoolResponse{Success: true}, nil
+}
+
+func (s *server) Show(ctx context.Context, body *pb.NameHolder) (*pb.ResponseBody, error) {
+	query := body.GetName()
+	if query == "all" {
+		data, err := json.Marshal(state.GetState())
+		if err != nil {
+			return nil, err
+		}
+		return &pb.ResponseBody{Data: data}, nil
+	}
+	return nil, errors.New("invalid command recieved")
 }
 
 func (s *server) Down(ctx context.Context, body *pb.NameHolder) (*pb.NameHolder, error) {

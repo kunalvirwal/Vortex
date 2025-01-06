@@ -1,5 +1,7 @@
 package types
 
+import "sync"
+
 type Service struct {
 	Name          string                 `json:"name" yaml:"name" valid:"required~Field Name is required,matches(^.*\\S+.*$)~Name cannot contain only spaces"`
 	Image         string                 `json:"image" yaml:"image" valid:"required~Field Image Name is required,matches(^.*\\S+.*$)~Image cannot contain only spaces"`
@@ -13,4 +15,5 @@ type VService struct {
 	Service      Service
 	Deployment   string
 	ContainerIDs []string
+	Mu           sync.RWMutex
 }

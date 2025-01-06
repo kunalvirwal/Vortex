@@ -59,12 +59,25 @@ func CreateContainer(cfg *types.ContainerConfig) error {
 	cfg.ID = containerConf.ID
 	for _, service := range state.VortexServices {
 		if service.Service.Name == cfg.Service && service.Deployment == cfg.Deployment {
+			service.Mu.Lock()
 			service.ContainerIDs = append(service.ContainerIDs, cfg.ID)
+			service.Mu.Unlock()
 		}
 	}
 
 	// appends the container to VortexContainers
 	state.VortexContainers = append(state.VortexContainers, cfg)
+	return nil
+}
+
+func DeleteContainer(id string) error {
+	fmt.Println("Deleting container: ", id)
+	err := cli.ContainerRemove(context.Background(), id, container.RemoveOptions{
+		Force: true,
+	})
+	if err != nil {
+		return errors.New("Error in deleting container: " + err.Error())
+	}
 	return nil
 }
 

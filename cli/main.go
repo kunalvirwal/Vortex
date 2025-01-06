@@ -16,12 +16,17 @@ func main() {
 	// Stop the vortex service
 	downCmd := flag.NewFlagSet("down", flag.ExitOnError)
 
-	// // Apply a deployment
+	// Apply a deployment
 	applyCmd := flag.NewFlagSet("apply", flag.ExitOnError)
 	applyDep := applyCmd.String("f", "", "Path to the deployment to apply")
 
-	// // Delete a deployment
-	// deleteCmd := flag.NewFlagSet("delete", flag.ExitOnError)
+	// Delete a deployment or a service
+	deleteCmd := flag.NewFlagSet("delete", flag.ExitOnError)
+	deleteDep := deleteCmd.String("d", "", "Deployment to delete")
+	deleteService := deleteCmd.String("s", "", "Service to delete")
+
+	// Show the state of the app
+	showCmd := flag.NewFlagSet("show", flag.ExitOnError)
 
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: vortex <command> <args>")
@@ -37,6 +42,12 @@ func main() {
 
 	case "apply":
 		applyDeployment(applyCmd, applyDep)
+
+	case "delete":
+		delete(deleteCmd, deleteDep, deleteService)
+
+	case "show":
+		show(showCmd)
 	}
 
 }

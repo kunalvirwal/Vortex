@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/kunalvirwal/Vortex/internal/state"
@@ -19,7 +18,6 @@ func GenerateContainerName(cfg *types.ContainerConfig) string {
 		parts = strings.Split(cfg.Image, ":")
 		if len(parts) > 1 {
 			newParts := strings.Split(parts[0], "/")
-			fmt.Println(newParts)
 			if len(newParts) > 1 {
 				imageName = newParts[1]
 			} else {
