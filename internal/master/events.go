@@ -1,16 +1,18 @@
-package docker
+package master
 
 import (
 	"context"
 	"fmt"
 
 	"github.com/docker/docker/api/types/events"
+	"github.com/kunalvirwal/Vortex/internal/docker"
 )
 
 // listen to docker events
 func ListenEvents() {
 
 	ctx := context.Background()
+	cli := docker.NewClient()
 	eventChan, errChan := cli.Events(ctx, events.ListOptions{})
 
 	for {
@@ -24,15 +26,25 @@ func ListenEvents() {
 }
 
 func HandleEvent(event events.Message) {
-	// fmt.Println("Event:", event)
+	fmt.Println("Event:", event.Action)
 	if event.Type == events.ContainerEventType {
 		switch event.Action {
 		case "die":
-			// go tracker.ContainerDied(event.Actor.ID)
+			go ContainerDied(event.Actor.ID)
+
 		case "start":
 			// go tracker.ContainerStarted(event.Actor.ID)
-		case "stop":
-			// go tracker.ContainerStopped(event.Actor.ID)
+
 		}
 	}
 }
+
+// Events in life of a Docker container:
+// Event: create
+// Event: attach
+// Event: connect
+// Event: start
+// Event: kill
+// Event: disconnect
+// Event: die
+// Event: destroy

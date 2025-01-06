@@ -161,7 +161,9 @@ func (s *server) Delete(ctx context.Context, body *pb.NameHolder) (*pb.BoolRespo
 	} else {
 		return &pb.BoolResponse{Success: false}, errors.New("invalid deployment or service name recieved")
 	}
+
 	// Delete the containers from docker sdk
+	// Make sure the containers are delete after removing them from state variables as othervise tracker will try to restart them
 	for _, id := range rmContainerIDs {
 		docker.DeleteContainer(id)
 	}

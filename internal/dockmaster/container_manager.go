@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kunalvirwal/Vortex/internal/docker"
+	"github.com/kunalvirwal/Vortex/internal/state"
 	"github.com/kunalvirwal/Vortex/internal/utils"
 	"github.com/kunalvirwal/Vortex/types"
 	"golang.org/x/sync/errgroup"
@@ -11,7 +12,54 @@ import (
 
 func ReplaceDiedContainer(cfg *types.ContainerConfig) {
 	// replace the container
-	cfg.Name = utils.GenerateContainerName(cfg)
+	newName := utils.GenerateContainerName(cfg)
+	docker.FindOrPullImage(cfg.Image)
+	newContainer := &types.ContainerConfig{
+		Name:        newName,
+		Service:     cfg.Service,
+		Deployment:  cfg.Deployment,
+		Image:       cfg.Image,
+		HealthCheck: cfg.HealthCheck,
+		Env:         cfg.Env,
+	}
+	err := docker.CreateContainer(newContainer)
+	if err != nil {
+		fmt.Println("Error in creating container: " + err.Error())
+		return
+	}
+
+	for i := range state.VortexServices {
+		if state.VortexServices[i].Service.Name == cfg.Service && state.VortexServices[i].Deployment == cfg.Deployment {
+			for j := range state.VortexServices[i].ContainerIDs {
+				if state.VortexServices[i].ContainerIDs[j] == cfg.ID {
+					state.VortexServices[i].Mu.Lock()
+					state.VortexServices[i].ContainerIDs[j] = newContainer.ID
+					state.VortexServices[i].Mu.Unlock()
+					break
+				}
+			}
+			break
+		}
+	}
+	for i := range state.VortexContainers {
+		if state.VortexContainers[i].ID == cfg.ID {
+			state.VortexContainers[i] = newContainer
+			break
+		}
+	}
+
+	err = docker.DeleteContainer(cfg.ID)
+	if err != nil {
+		fmt.Println("Error in deleting container " + cfg.ID + " : " + err.Error())
+		return
+	}
+
+	err = docker.StartContainer(newContainer.ID)
+	if err != nil {
+		fmt.Println("Error in starting container: " + err.Error())
+		return
+	}
+
 }
 
 func Deploy(VService *types.VService) error {

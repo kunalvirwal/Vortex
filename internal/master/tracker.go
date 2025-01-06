@@ -1,15 +1,25 @@
 package master
 
 import (
+	"fmt"
+
 	"github.com/kunalvirwal/Vortex/internal/dockmaster"
 	"github.com/kunalvirwal/Vortex/internal/state"
+	"github.com/kunalvirwal/Vortex/internal/utils"
 	"github.com/kunalvirwal/Vortex/types"
 )
 
 func ContainerDied(containerID string) {
 	container, tracked := IsVortexContainer(containerID)
 	if tracked {
-		dockmaster.ReplaceDiedContainer(container)
+		vService, err := utils.GetServiceByName(container.Service)
+		if vService.Service.RestartPolicy == "Always" {
+			if err != nil {
+				fmt.Println("Service not found!")
+				return
+			}
+			dockmaster.ReplaceDiedContainer(container)
+		}
 	}
 }
 

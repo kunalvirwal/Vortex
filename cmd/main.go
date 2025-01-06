@@ -8,7 +8,7 @@ func main() {
 	// gRPC routes
 
 	InitgRPCListener()
-	// InitTracker()
+	InitTracker()
 	// initSchedulers()
 	<-make(chan struct{})
 }

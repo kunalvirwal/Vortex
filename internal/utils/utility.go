@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"errors"
+
+	"github.com/kunalvirwal/Vortex/internal/state"
 	"github.com/kunalvirwal/Vortex/types"
 )
 
@@ -52,4 +55,13 @@ func RemoveContainerConfigByService(Vcontainers []*types.ContainerConfig, servic
 	}
 
 	return Vcontainers
+}
+
+func GetServiceByName(name string) (*types.VService, error) {
+	for _, service := range state.VortexServices {
+		if service.Service.Name == name {
+			return service, nil
+		}
+	}
+	return nil, errors.New("service not found")
 }

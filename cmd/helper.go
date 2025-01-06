@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/kunalvirwal/Vortex/internal/docker"
 	"github.com/kunalvirwal/Vortex/internal/master"
 )
 
@@ -15,7 +14,7 @@ func initSchedulers() {
 }
 
 func InitTracker() {
-	go docker.ListenEvents()
+	go master.ListenEvents()
 }
 
 func InitgRPCListener() {
