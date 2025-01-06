@@ -26,7 +26,7 @@ func ListenEvents() {
 }
 
 func HandleEvent(event events.Message) {
-	fmt.Println("Event:", event.Action)
+	// fmt.Println("Event:", event.Action)
 	if event.Type == events.ContainerEventType {
 		switch event.Action {
 		case "die":

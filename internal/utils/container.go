@@ -44,19 +44,21 @@ func generateRandomString(length int) string {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
 	salt := string(b)
-	if isNewSalt(salt) {
+	if isNewSalt(salt, length) {
 		return salt
 	}
 	return generateRandomString(length)
 
 }
 
-func isNewSalt(salt string) bool {
-	for _, container := range state.VortexContainers {
+func isNewSalt(salt string, length int) bool {
+	state.VortexContainers.Mu.RLock()
+	for _, container := range state.VortexContainers.List {
 		l := len(container.Name)
-		if container.Name[l-5:] == salt {
+		if container.Name[l-length:] == salt {
 			return false
 		}
 	}
+	state.VortexContainers.Mu.RUnlock()
 	return true
 }

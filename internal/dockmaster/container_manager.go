@@ -15,12 +15,14 @@ func ReplaceDiedContainer(cfg *types.ContainerConfig) {
 	newName := utils.GenerateContainerName(cfg)
 	docker.FindOrPullImage(cfg.Image)
 	newContainer := &types.ContainerConfig{
-		Name:        newName,
-		Service:     cfg.Service,
-		Deployment:  cfg.Deployment,
-		Image:       cfg.Image,
-		HealthCheck: cfg.HealthCheck,
-		Env:         cfg.Env,
+		Name:         newName,
+		Service:      cfg.Service,
+		Deployment:   cfg.Deployment,
+		Image:        cfg.Image,
+		HealthCheck:  cfg.HealthCheck,
+		Env:          cfg.Env,
+		ServiceUID:   cfg.ServiceUID,
+		StartCommand: cfg.StartCommand,
 	}
 	err := docker.CreateContainer(newContainer)
 	if err != nil {
@@ -28,22 +30,27 @@ func ReplaceDiedContainer(cfg *types.ContainerConfig) {
 		return
 	}
 
-	for i := range state.VortexServices {
-		if state.VortexServices[i].Service.Name == cfg.Service && state.VortexServices[i].Deployment == cfg.Deployment {
-			for j := range state.VortexServices[i].ContainerIDs {
-				if state.VortexServices[i].ContainerIDs[j] == cfg.ID {
-					state.VortexServices[i].Mu.Lock()
-					state.VortexServices[i].ContainerIDs[j] = newContainer.ID
-					state.VortexServices[i].Mu.Unlock()
+	// Update the containerID in VortexService ContainerIDs
+	for i := range state.VortexServices.List {
+		if state.VortexServices.List[i].Service.Name == cfg.Service && state.VortexServices.List[i].Deployment == cfg.Deployment {
+			for j := range state.VortexServices.List[i].ContainerIDs {
+				if state.VortexServices.List[i].ContainerIDs[j] == cfg.ID {
+					state.VortexServices.List[i].Mu.Lock()
+					state.VortexServices.List[i].ContainerIDs[j] = newContainer.ID
+					state.VortexServices.List[i].Mu.Unlock()
 					break
 				}
 			}
 			break
 		}
 	}
-	for i := range state.VortexContainers {
-		if state.VortexContainers[i].ID == cfg.ID {
-			state.VortexContainers[i] = newContainer
+
+	// Remove the old container from VortexContainers
+	for i := range state.VortexContainers.List {
+		if state.VortexContainers.List[i].ID == cfg.ID {
+			state.VortexContainers.Mu.Lock()
+			state.VortexContainers.List = append(state.VortexContainers.List[:i], state.VortexContainers.List[i+1:]...)
+			state.VortexContainers.Mu.Unlock()
 			break
 		}
 	}
@@ -68,11 +75,13 @@ func Deploy(VService *types.VService) error {
 	var eg errgroup.Group
 	for i := 0; i < VService.Service.Replicas; i++ {
 		container := &types.ContainerConfig{
-			Service:     VService.Service.Name,
-			Deployment:  VService.Deployment,
-			Image:       VService.Service.Image,
-			HealthCheck: VService.Service.HealthCheck,
-			Env:         VService.Service.Env,
+			Service:      VService.Service.Name,
+			Deployment:   VService.Deployment,
+			Image:        VService.Service.Image,
+			HealthCheck:  VService.Service.HealthCheck,
+			Env:          VService.Service.Env,
+			ServiceUID:   uint(i) + 1,
+			StartCommand: VService.Service.StartCommand,
 		}
 		container.Name = utils.GenerateContainerName(container)
 		eg.Go(func() error {

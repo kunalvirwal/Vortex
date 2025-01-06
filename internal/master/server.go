@@ -44,15 +44,17 @@ func (s *server) Apply(ctx context.Context, body *pb.RequestBody) (*pb.BoolRespo
 
 	newDep := true
 	// checks if a deployment with the same name already exists
-	for _, vDeployment := range state.VortexDeployments {
+	state.VortexDeployments.Mu.Lock()
+	for _, vDeployment := range state.VortexDeployments.List {
 		if dep.Version == vDeployment.Version {
 			newDep = false
 			break
 		}
 	}
 	if newDep {
-		state.VortexDeployments = append(state.VortexDeployments, dep)
+		state.VortexDeployments.List = append(state.VortexDeployments.List, dep)
 	}
+	state.VortexDeployments.Mu.Unlock()
 
 	// Two services can have same name if they are in different deployments but can not have the same name in the same deployment
 	// Checks if any service is repeated in the deployment
@@ -71,12 +73,17 @@ func (s *server) Apply(ctx context.Context, body *pb.RequestBody) (*pb.BoolRespo
 
 	// Modify the services if they are already deployed and remove them from newServiceArr
 	for _, service := range newServiceArr {
-		for _, vService := range state.VortexServices {
-			if service.Service.Name == vService.Service.Name {
+		for _, vService := range state.VortexServices.List {
+			if service.Service.Name == vService.Service.Name && service.Deployment == vService.Deployment {
 				g.Go(func() error {
 					return dockmaster.Modify(vService, service)
 				})
-				newServiceArr, _ = utils.PopServiceByName(newServiceArr, service.Service.Name)
+				for i, v := range newServiceArr {
+					if v.Service.Name == service.Service.Name && v.Deployment == service.Deployment {
+						newServiceArr = append(newServiceArr[:i], newServiceArr[i+1:]...)
+						break
+					}
+				}
 				break
 			}
 		}
@@ -84,7 +91,9 @@ func (s *server) Apply(ctx context.Context, body *pb.RequestBody) (*pb.BoolRespo
 
 	// Deploy the new services
 	for _, service := range newServiceArr {
-		state.VortexServices = append(state.VortexServices, service)
+		state.VortexContainers.Mu.Lock()
+		state.VortexServices.List = append(state.VortexServices.List, service)
+		state.VortexContainers.Mu.Unlock()
 		g.Go(func() error {
 			return dockmaster.Deploy(service)
 		})
@@ -106,10 +115,6 @@ func (s *server) Delete(ctx context.Context, body *pb.NameHolder) (*pb.BoolRespo
 	Name := body.GetName()
 	query := strings.Split(Name, " ")
 
-	// for _, cfg := range state.VortexContainers {
-	// 	fmt.Println(*cfg)
-	// }
-
 	// first remove the deployment, services and containers from the state variables
 	// then delete the containers from docker sdk otherwise tracker will try to restart them
 	// fmt.Printf("%v", query)
@@ -118,44 +123,44 @@ func (s *server) Delete(ctx context.Context, body *pb.NameHolder) (*pb.BoolRespo
 	if len(query) == 1 {
 
 		// Removing deployment from state
-		var dep *types.Deployment
-		state.VortexDeployments, dep = utils.PopDeployment(state.VortexDeployments, query[0])
+		dep := utils.PopDeployment(state.VortexDeployments, query[0])
 		if dep == nil {
 			return &pb.BoolResponse{Success: false}, errors.New("deployment not found")
 		}
 
 		// Removing services from state
-		var rmServices []*types.VService
-		state.VortexServices, rmServices = utils.PopServicesByDepVersion(state.VortexServices, dep.Version)
+		rmServices := utils.PopServicesByDepVersion(state.VortexServices, dep.Version)
 
 		// Removing containers from VortexContainers
-		for _, service := range rmServices {
-			state.VortexContainers = utils.RemoveContainerConfigByService(state.VortexContainers, service)
-			rmContainerIDs = append(rmContainerIDs, service.ContainerIDs...)
+		for _, vService := range rmServices {
+			utils.RemoveContainerConfigsByService(state.VortexContainers, vService)
+			rmContainerIDs = append(rmContainerIDs, vService.ContainerIDs...)
 		}
 
 	} else if len(query) == 2 {
+
 		// Find Deployment
 		var dep *types.Deployment
-		for _, deploy := range state.VortexDeployments {
+		state.VortexDeployments.Mu.RLock()
+		for _, deploy := range state.VortexDeployments.List {
 			if deploy.Version == query[0] {
 				dep = deploy
 				break
 			}
 		}
+		state.VortexDeployments.Mu.RUnlock()
 		if dep == nil {
 			return &pb.BoolResponse{Success: false}, errors.New("deployment not found")
 		}
 
 		// Removing service from state
-		var rmService *types.VService
-		state.VortexServices, rmService = utils.PopServiceByName(state.VortexServices, query[1])
+		rmService := utils.PopServiceByName(state.VortexServices, query[1])
 		if rmService == nil {
 			return &pb.BoolResponse{Success: false}, errors.New("service not found")
 		}
 
 		// Removing containers from VortexContainers
-		state.VortexContainers = utils.RemoveContainerConfigByService(state.VortexContainers, rmService)
+		utils.RemoveContainerConfigsByService(state.VortexContainers, rmService)
 		rmContainerIDs = append(rmContainerIDs, rmService.ContainerIDs...)
 
 	} else {

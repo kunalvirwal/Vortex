@@ -9,6 +9,7 @@ type Service struct {
 	Env           map[string]interface{} `json:"env" yaml:"env"`
 	HealthCheck   *HealthCheck           `json:"healthCheck" yaml:"healthCheck"`
 	RestartPolicy string                 `json:"restartPolicy" yaml:"restartPolicy"`
+	StartCommand  string                 `json:"startCommand" yaml:"startCommand"`
 }
 
 type VService struct {

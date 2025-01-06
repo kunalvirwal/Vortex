@@ -1,10 +1,15 @@
 package types
 
+type State []ServiceState
+
 type ServiceState struct {
 	Deployment   string
 	Service      Service
-	ContainerIDs []string
+	ContainerIDs []Cntr
 	HealthCheck  HealthCheck
 }
 
-type State []ServiceState
+type Cntr struct {
+	ID         string
+	ServiceUID uint
+}

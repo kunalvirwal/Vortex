@@ -32,7 +32,10 @@ func ContainerStopped(containerID string) {
 }
 
 func IsVortexContainer(containerID string) (*types.ContainerConfig, bool) {
-	for _, container := range state.VortexContainers {
+	state.VortexContainers.Mu.RLock()
+	defer state.VortexContainers.Mu.RUnlock()
+
+	for _, container := range state.VortexContainers.List {
 		if container.ID == containerID {
 			return container, true
 		}

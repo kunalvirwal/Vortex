@@ -8,11 +8,13 @@ type HealthCheck struct {
 }
 
 type ContainerConfig struct {
-	Image       string
-	Name        string
-	ID          string
-	Service     string
-	Deployment  string
-	Env         map[string]interface{}
-	HealthCheck *HealthCheck
+	Image        string
+	Name         string
+	ID           string
+	Service      string
+	Deployment   string
+	Env          map[string]interface{}
+	HealthCheck  *HealthCheck
+	ServiceUID   uint
+	StartCommand string
 }
