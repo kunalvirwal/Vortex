@@ -17,4 +17,5 @@ type ContainerConfig struct {
 	HealthCheck  *HealthCheck
 	ServiceUID   uint
 	StartCommand string
+	CrashData    CrashData
 }

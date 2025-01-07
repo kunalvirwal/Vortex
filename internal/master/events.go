@@ -26,12 +26,11 @@ func ListenEvents() {
 }
 
 func HandleEvent(event events.Message) {
-	// fmt.Println("Event:", event.Action)
+	// fmt.Println("Event:", event)
 	if event.Type == events.ContainerEventType {
 		switch event.Action {
 		case "die":
-			go ContainerDied(event.Actor.ID)
-
+			go ContainerDied(event)
 		case "start":
 			// go tracker.ContainerStarted(event.Actor.ID)
 

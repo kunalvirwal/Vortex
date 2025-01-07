@@ -1,9 +1,11 @@
-package utils
+package docker
 
 import (
+	"context"
 	"strings"
 
-	"github.com/kunalvirwal/Vortex/internal/state"
+	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/kunalvirwal/Vortex/types"
 	"golang.org/x/exp/rand"
 )
@@ -44,21 +46,25 @@ func generateRandomString(length int) string {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
 	salt := string(b)
-	if isNewSalt(salt, length) {
+	containers, err := cli.ContainerList(context.Background(), container.ListOptions{})
+	if err != nil {
+		return "unable to generate random string"
+	}
+	if isNewSalt(salt, length, containers) {
 		return salt
 	}
 	return generateRandomString(length)
 
 }
 
-func isNewSalt(salt string, length int) bool {
-	state.VortexContainers.Mu.RLock()
-	for _, container := range state.VortexContainers.List {
-		l := len(container.Name)
-		if container.Name[l-length:] == salt {
-			return false
+func isNewSalt(salt string, length int, containers []dockertypes.Container) bool {
+	for _, container := range containers {
+		for _, name := range container.Names {
+			l := len(name)
+			if l >= length && name[l-length:] == salt {
+				return false
+			}
 		}
 	}
-	state.VortexContainers.Mu.RUnlock()
 	return true
 }

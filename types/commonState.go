@@ -10,6 +10,7 @@ type ServiceState struct {
 }
 
 type Cntr struct {
-	ID         string
-	ServiceUID uint
+	ID               string
+	ServiceUID       uint
+	CrashLoopBackOff bool
 }

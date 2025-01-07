@@ -3,14 +3,16 @@ package utils
 import "time"
 
 type scheduler struct {
+	count       int // -1 for infinite
 	interval    time.Duration
 	task        func()
 	stopTrigger chan bool
 }
 
 // creates a new scheduler for a task
-func NewScheduler(interval time.Duration, task func()) *scheduler {
+func NewScheduler(count int, interval time.Duration, task func()) *scheduler {
 	return &scheduler{
+		count:    count,
 		interval: interval,
 		task:     task,
 	}
@@ -24,10 +26,14 @@ func (s *scheduler) RunAsync() {
 // runs the scheduler task
 func (s *scheduler) Run() {
 
+	var i int = 0
 	ticker := time.NewTicker(s.interval)
 	select {
 	case <-ticker.C:
-		s.task()
+		i++
+		if i <= s.count || s.count < 0 {
+			s.task()
+		}
 	case <-s.stopTrigger:
 		ticker.Stop()
 		return

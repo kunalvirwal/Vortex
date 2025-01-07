@@ -12,6 +12,8 @@ import (
 	"github.com/kunalvirwal/Vortex/types"
 )
 
+// Creates a docker container and adds its ID to the VortexService.ContainerIDs
+// and also adds the container to state.VortexContainers
 func CreateContainer(cfg *types.ContainerConfig) error {
 	// create container
 	ctx := context.Background()
@@ -94,6 +96,7 @@ func DeleteContainer(id string) error {
 	return nil
 }
 
+// Starts the container
 func StartContainer(containerID string) error {
 	ctx := context.Background()
 	err := cli.ContainerStart(ctx, containerID, container.StartOptions{})

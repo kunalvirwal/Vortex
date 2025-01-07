@@ -2,6 +2,7 @@ package state
 
 import (
 	"sync"
+	"time"
 
 	"github.com/kunalvirwal/Vortex/types"
 )
@@ -21,9 +22,18 @@ type ContainerList struct {
 	List []*types.ContainerConfig
 }
 
+// State variables
 var VortexDeployments = &DeploymentList{}
 var VortexServices = &ServiceList{}
 var VortexContainers = &ContainerList{}
+
+// ExponentialCrashBackoff variables
+var MaxCrashCount uint = 2                                 // Maximum number of crashes allowed before exponential backoff kicks in
+var MaxBackoffDuration time.Duration = time.Minute * 2     // Upperlimit for exponential backoff duration
+var InitialBackoffDuration time.Duration = time.Second * 1 // Initial backoff duration
+var BackoffMultiplier uint = 2                             // Exponential Multiplier for backoff
+var CrashHistorySaveDuration time.Duration = 0             // 0 means save crash events forever, can take any time value
+var BackoffResetDuration time.Duration = time.Minute * 5   // Reset the backoff duration, if no crashes for this duration after the last crash
 
 func GetState() types.State {
 
@@ -47,8 +57,9 @@ func GetState() types.State {
 		for _, container := range VortexContainers.List {
 			if container.Service == service.Service.Name {
 				s = append(s, types.Cntr{
-					ID:         container.ID,
-					ServiceUID: container.ServiceUID,
+					ID:               container.ID,
+					ServiceUID:       container.ServiceUID,
+					CrashLoopBackOff: container.CrashData.IsInCrashLoop,
 				})
 			}
 		}

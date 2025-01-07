@@ -2,18 +2,19 @@ package dockmaster
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/kunalvirwal/Vortex/internal/docker"
 	"github.com/kunalvirwal/Vortex/internal/state"
-	"github.com/kunalvirwal/Vortex/internal/utils"
 	"github.com/kunalvirwal/Vortex/types"
 	"golang.org/x/sync/errgroup"
 )
 
 func ReplaceDiedContainer(cfg *types.ContainerConfig) {
 	// replace the container
-	newName := utils.GenerateContainerName(cfg)
+	newName := docker.GenerateContainerName(cfg)
 	docker.FindOrPullImage(cfg.Image)
+
 	newContainer := &types.ContainerConfig{
 		Name:         newName,
 		Service:      cfg.Service,
@@ -23,7 +24,15 @@ func ReplaceDiedContainer(cfg *types.ContainerConfig) {
 		Env:          cfg.Env,
 		ServiceUID:   cfg.ServiceUID,
 		StartCommand: cfg.StartCommand,
+		CrashData: types.CrashData{
+			LastCrashTime:          cfg.CrashData.LastCrashTime,
+			CrashCount:             cfg.CrashData.CrashCount,
+			CurrentBackoffDuration: cfg.CrashData.CurrentBackoffDuration,
+			IsInCrashLoop:          cfg.CrashData.IsInCrashLoop,
+			CrashHistory:           cfg.CrashData.CrashHistory,
+		},
 	}
+
 	err := docker.CreateContainer(newContainer)
 	if err != nil {
 		fmt.Println("Error in creating container: " + err.Error())
@@ -57,8 +66,12 @@ func ReplaceDiedContainer(cfg *types.ContainerConfig) {
 
 	err = docker.DeleteContainer(cfg.ID)
 	if err != nil {
-		fmt.Println("Error in deleting container " + cfg.ID + " : " + err.Error())
-		return
+		if strings.Contains(err.Error(), "No such container") {
+			fmt.Println("Container already deleted : " + cfg.ID)
+		} else {
+			fmt.Println("Error in deleting container: " + err.Error())
+			return
+		}
 	}
 
 	err = docker.StartContainer(newContainer.ID)
@@ -83,7 +96,7 @@ func Deploy(VService *types.VService) error {
 			ServiceUID:   uint(i) + 1,
 			StartCommand: VService.Service.StartCommand,
 		}
-		container.Name = utils.GenerateContainerName(container)
+		container.Name = docker.GenerateContainerName(container)
 		eg.Go(func() error {
 			err := docker.CreateContainer(container)
 			if err != nil {

@@ -7,10 +7,10 @@ services:
       PORT: 80
       DURATION: 0.1
     healthCheck: # health check configuration
-      command: "curl --fail --silent http://localhost:80/ || exit 1" # command to run inside container wrt /, must end in exit code 1 if failing
-      interval: 30 # interval to run health check
-      timeout: 5 # timeout for health check to be declared failed
-      retries: 1 # number of retries before declaring container unhealth
+      # command: "curl --fail --silent http://localhost:80/ || exit 1" # command to run inside container wrt /, must end in exit code 1 if failing
+      # interval: 30 # interval to run health check
+      # timeout: 5 # timeout for health check to be declared failed
+      # retries: 1 # number of retries before declaring container unhealth
     restartPolicy: "Always" # Always (Default), OnFailure, Never
 
   - name: "Linux" # name of the service, uniquely identifies a service
