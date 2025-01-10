@@ -10,8 +10,8 @@ It should have a healthcheck to see if the service is running or not : Done
 
 II 
 It must have gRPC connections within cli and main service for healthchecks and responses : Done
-It should detect container Crash Loop and Implement Exponential CrashLoopBackOff :Done
-It should have Exponential backoff reset
+It should detect container Crash Loop and Implement Exponential CrashLoopBackOff : Done
+It should have Exponential backoff reset : Done
 It should be dynamically modifiable
 It should detect container health and restart if possible
 

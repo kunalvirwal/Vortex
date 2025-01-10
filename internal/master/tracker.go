@@ -16,11 +16,12 @@ func ContainerDied(event events.Message) {
 	container, tracked := IsVortexContainer(containerID)
 	if tracked {
 		vService, err := utils.GetServiceByName(container.Service)
+		if err != nil {
+			fmt.Println("Service not found!")
+			return
+		}
 		if vService.Service.RestartPolicy == "Always" {
-			if err != nil {
-				fmt.Println("Service not found!")
-				return
-			}
+			utils.DelScheduler(containerID) // Terminates and Deletes any associated scheduler
 			RecordCrash(event, container)
 			if !container.CrashData.IsInCrashLoop {
 				if container.CrashData.CrashCount <= state.MaxCrashCount {

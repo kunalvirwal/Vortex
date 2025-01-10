@@ -6,6 +6,7 @@ import (
 
 	"github.com/kunalvirwal/Vortex/internal/docker"
 	"github.com/kunalvirwal/Vortex/internal/state"
+	"github.com/kunalvirwal/Vortex/internal/utils"
 	"github.com/kunalvirwal/Vortex/types"
 	"golang.org/x/sync/errgroup"
 )
@@ -77,7 +78,15 @@ func ReplaceDiedContainer(cfg *types.ContainerConfig) {
 	err = docker.StartContainer(newContainer.ID)
 	if err != nil {
 		fmt.Println("Error in starting container: " + err.Error())
-		return
+	} else {
+		fmt.Println("Creating new container and starting its backoff reset scheduler for :" + newContainer.ID)
+		s := utils.NewScheduler(1, state.BackoffResetDuration, func() {
+			utils.ResetCrashbackOff(newContainer.ID)
+		})
+		s.RunAsync()
+		utils.BackOffResetSchedulers.Mu.Lock()
+		utils.BackOffResetSchedulers.Schedule[newContainer.ID] = s
+		utils.BackOffResetSchedulers.Mu.Unlock()
 	}
 
 }
