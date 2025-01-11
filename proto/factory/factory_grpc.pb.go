@@ -24,6 +24,7 @@ const (
 	ContainerFactory_Show_FullMethodName        = "/factory.ContainerFactory/Show"
 	ContainerFactory_HealthCheck_FullMethodName = "/factory.ContainerFactory/HealthCheck"
 	ContainerFactory_Down_FullMethodName        = "/factory.ContainerFactory/Down"
+	ContainerFactory_CrashLog_FullMethodName    = "/factory.ContainerFactory/CrashLog"
 )
 
 // ContainerFactoryClient is the client API for ContainerFactory service.
@@ -35,6 +36,7 @@ type ContainerFactoryClient interface {
 	Show(ctx context.Context, in *NameHolder, opts ...grpc.CallOption) (*ResponseBody, error)
 	HealthCheck(ctx context.Context, in *NameHolder, opts ...grpc.CallOption) (*NameHolder, error)
 	Down(ctx context.Context, in *NameHolder, opts ...grpc.CallOption) (*NameHolder, error)
+	CrashLog(ctx context.Context, in *NameHolder, opts ...grpc.CallOption) (*ResponseBody, error)
 }
 
 type containerFactoryClient struct {
@@ -95,6 +97,16 @@ func (c *containerFactoryClient) Down(ctx context.Context, in *NameHolder, opts 
 	return out, nil
 }
 
+func (c *containerFactoryClient) CrashLog(ctx context.Context, in *NameHolder, opts ...grpc.CallOption) (*ResponseBody, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResponseBody)
+	err := c.cc.Invoke(ctx, ContainerFactory_CrashLog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ContainerFactoryServer is the server API for ContainerFactory service.
 // All implementations must embed UnimplementedContainerFactoryServer
 // for forward compatibility.
@@ -104,6 +116,7 @@ type ContainerFactoryServer interface {
 	Show(context.Context, *NameHolder) (*ResponseBody, error)
 	HealthCheck(context.Context, *NameHolder) (*NameHolder, error)
 	Down(context.Context, *NameHolder) (*NameHolder, error)
+	CrashLog(context.Context, *NameHolder) (*ResponseBody, error)
 	mustEmbedUnimplementedContainerFactoryServer()
 }
 
@@ -128,6 +141,9 @@ func (UnimplementedContainerFactoryServer) HealthCheck(context.Context, *NameHol
 }
 func (UnimplementedContainerFactoryServer) Down(context.Context, *NameHolder) (*NameHolder, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Down not implemented")
+}
+func (UnimplementedContainerFactoryServer) CrashLog(context.Context, *NameHolder) (*ResponseBody, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CrashLog not implemented")
 }
 func (UnimplementedContainerFactoryServer) mustEmbedUnimplementedContainerFactoryServer() {}
 func (UnimplementedContainerFactoryServer) testEmbeddedByValue()                          {}
@@ -240,6 +256,24 @@ func _ContainerFactory_Down_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ContainerFactory_CrashLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NameHolder)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ContainerFactoryServer).CrashLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ContainerFactory_CrashLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ContainerFactoryServer).CrashLog(ctx, req.(*NameHolder))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ContainerFactory_ServiceDesc is the grpc.ServiceDesc for ContainerFactory service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +300,10 @@ var ContainerFactory_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Down",
 			Handler:    _ContainerFactory_Down_Handler,
+		},
+		{
+			MethodName: "CrashLog",
+			Handler:    _ContainerFactory_CrashLog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

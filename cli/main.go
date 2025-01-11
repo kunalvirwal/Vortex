@@ -28,6 +28,12 @@ func main() {
 	// Show the state of the app
 	showCmd := flag.NewFlagSet("show", flag.ExitOnError)
 
+	// Show the crash log for a container
+	crashCmd := flag.NewFlagSet("crashlog", flag.ExitOnError)
+	crashDep := crashCmd.String("d", "", "Deployment to show crash log for")
+	crashService := crashCmd.String("s", "", "Service to show crash log for")
+	crashUid := crashCmd.Int("u", -1, "Uid of the container to show crash log for")
+
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: vortex <command> <args>")
 		os.Exit(1)
@@ -48,6 +54,12 @@ func main() {
 
 	case "show":
 		show(showCmd)
+
+	case "crashlog":
+		crashlog(crashCmd, crashDep, crashService, crashUid)
+
+	default:
+		fmt.Println("Unknown Operation!:", os.Args[1])
 	}
 
 }

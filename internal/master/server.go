@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -186,6 +187,42 @@ func (s *server) Show(ctx context.Context, body *pb.NameHolder) (*pb.ResponseBod
 		return &pb.ResponseBody{Data: data}, nil
 	}
 	return nil, errors.New("invalid command recieved")
+}
+
+func (s *server) CrashLog(ctx context.Context, body *pb.NameHolder) (*pb.ResponseBody, error) {
+	query := body.GetName()
+	if query == "" {
+		return nil, errors.New("invalid command recieved")
+	}
+	queryArr := strings.Split(query, " ")
+	if len(queryArr) != 3 {
+		return nil, errors.New("invalid command recieved")
+	}
+	depName := queryArr[0]
+	serviceName := queryArr[1]
+	uid, err := strconv.Atoi(queryArr[2])
+	if err != nil || uid < 1 {
+		return nil, errors.New("invalid service uid")
+	}
+	state.VortexContainers.Mu.RLock()
+	defer state.VortexContainers.Mu.RUnlock()
+
+	for _, vcontainer := range state.VortexContainers.List {
+		if vcontainer.Deployment == depName && vcontainer.Service == serviceName && vcontainer.ServiceUID == uint(uid) {
+			data, err := json.Marshal(map[string]interface{}{
+				"CrashCount":             vcontainer.CrashData.CrashCount,
+				"LastCrashTime":          vcontainer.CrashData.LastCrashTime,
+				"CurrentBackoffDuration": vcontainer.CrashData.CurrentBackoffDuration.Seconds(),
+				"IsInCrashLoop":          vcontainer.CrashData.IsInCrashLoop,
+				"CrashHistory":           vcontainer.CrashData.CrashHistory,
+			})
+			if err != nil {
+				return nil, err
+			}
+			return &pb.ResponseBody{Data: data}, nil
+		}
+	}
+	return nil, errors.New("container config not found")
 }
 
 func (s *server) Down(ctx context.Context, body *pb.NameHolder) (*pb.NameHolder, error) {

@@ -10,6 +10,7 @@ service ContainerFactory {
     rpc Show (NameHolder) returns (ResponseBody) {}
     rpc HealthCheck (NameHolder) returns (NameHolder) {}
     rpc Down (NameHolder) returns (NameHolder) {}
+    rpc CrashLog (NameHolder) returns (ResponseBody) {}
 }
 
 message RequestBody {

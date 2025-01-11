@@ -45,17 +45,20 @@ func (s *Scheduler) Run() {
 
 	var i int = 0
 	ticker := time.NewTicker(s.interval)
-	select {
-	case <-ticker.C:
-		i++
-		if i <= s.count || s.count < 0 {
-			s.task()
-		} else {
-			s.Terminate()
+	for {
+		select {
+		case <-ticker.C:
+			i++
+			if i <= s.count || s.count < 0 {
+				s.task()
+			} else {
+				s.Terminate()
+				return
+			}
+		case <-s.stopTrigger:
+			ticker.Stop()
+			return
 		}
-	case <-s.stopTrigger:
-		ticker.Stop()
-		return
 	}
 }
 
@@ -90,10 +93,9 @@ func ResetCrashbackOff(containerID string) {
 
 func DelScheduler(containerID string) {
 	BackOffResetSchedulers.Mu.Lock()
-	if BackOffResetSchedulers.Schedule[containerID] != nil {
-		BackOffResetSchedulers.Schedule[containerID].Terminate()
+	if scheduler := BackOffResetSchedulers.Schedule[containerID]; scheduler != nil {
+		scheduler.Terminate()
 		delete(BackOffResetSchedulers.Schedule, containerID)
 	}
-
 	BackOffResetSchedulers.Mu.Unlock()
 }

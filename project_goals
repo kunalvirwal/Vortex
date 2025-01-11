@@ -20,16 +20,14 @@ It must integrate with velocity
 It can implement microservices architecture to run on multiple nodes
 It should have an install script for global install of the commands
 
-CLI
+CLI : Done
 vortex up
 vortex apply deployment -f ./<file.yaml>
 vortex show
 vortex delete -d <deployment-name>
 vortex delete -d <deployment-name> -s <service-name>
-vortex down
-// Doing v 
-vortex crashlog -d <deployment-name> -s <service-name>
 vortex crashlog -d <deployment-name> -s <service-name> -u <ServiceUID>
-Exponential Backoff reset
+vortex down
 
- protoc --go_out=./proto/ --go-grpc_out=./proto/ ./proto/factory.proto
+
+protoc --go_out=./proto/ --go-grpc_out=./proto/ ./proto/factory.proto
