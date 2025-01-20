@@ -28,7 +28,7 @@ var VortexServices = &ServiceList{}
 var VortexContainers = &ContainerList{}
 
 // ExponentialCrashBackoff variables
-var MaxCrashCount uint = 2                                 // Maximum number of crashes allowed before exponential backoff kicks in
+var MaxCrashCount uint = 200                               // Maximum number of crashes allowed before exponential backoff kicks in
 var MaxBackoffDuration time.Duration = time.Minute * 2     // Upperlimit for exponential backoff duration
 var InitialBackoffDuration time.Duration = time.Second * 1 // Initial backoff duration
 var BackoffMultiplier uint = 2                             // Exponential Multiplier for backoff
@@ -54,19 +54,27 @@ func GetState() types.State {
 			h = *service.Service.HealthCheck
 		}
 
-		for _, container := range VortexContainers.List {
-			if container.Service == service.Service.Name {
-				s = append(s, types.Cntr{
-					ID:               container.ID,
-					ServiceUID:       container.ServiceUID,
-					CrashLoopBackOff: container.CrashData.IsInCrashLoop,
-				})
+		VortexContainers.Mu.RLock()
+		// for _, id := range service.ContainerIDs {
+		// 	fmt.Println(id)
+		// }
+		for _, id := range service.ContainerIDs {
+			for _, container := range VortexContainers.List {
+				if container.ID == id {
+					s = append(s, types.Cntr{
+						ID:               container.ID,
+						ServiceUID:       container.ServiceUID,
+						CrashLoopBackOff: container.CrashData.IsInCrashLoop,
+					})
+					break
+				}
 			}
 		}
+		VortexContainers.Mu.RUnlock()
 
 		state = append(state, types.ServiceState{
 			Deployment:   service.Deployment,
-			Service:      service.Service,
+			Service:      *service.Service,
 			ContainerIDs: s,
 			HealthCheck:  h,
 		})

@@ -13,7 +13,7 @@ type Service struct {
 }
 
 type VService struct {
-	Service      Service
+	Service      *Service
 	Deployment   string
 	ContainerIDs []string
 	Mu           sync.RWMutex

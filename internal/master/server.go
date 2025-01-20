@@ -90,11 +90,12 @@ func (s *server) Apply(ctx context.Context, body *pb.RequestBody) (*pb.BoolRespo
 		}
 	}
 
+	fmt.Println("New services", newServiceArr)
 	// Deploy the new services
 	for _, service := range newServiceArr {
-		state.VortexContainers.Mu.Lock()
+		state.VortexServices.Mu.Lock()
 		state.VortexServices.List = append(state.VortexServices.List, service)
-		state.VortexContainers.Mu.Unlock()
+		state.VortexServices.Mu.Unlock()
 		g.Go(func() error {
 			return dockmaster.Deploy(service)
 		})
@@ -108,7 +109,7 @@ func (s *server) Apply(ctx context.Context, body *pb.RequestBody) (*pb.BoolRespo
 		}()
 		return &pb.BoolResponse{Success: false}, err
 	}
-	fmt.Println(state.GetState())
+	// fmt.Println(state.GetState())
 	return &pb.BoolResponse{Success: true}, nil
 }
 

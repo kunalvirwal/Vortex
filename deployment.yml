@@ -2,7 +2,7 @@ version: "Nginx-deployment/v1"  # uniquely identifies a deployment
 services:
   - name: "Nginx" # name of the service, uniquely identifies a service
     image: "nginx:latest"  # image to run in container
-    replicas: 5  # copys of the container to manage
+    replicas: 5 # copys of the container to manage
     env:  # environment variables
       PORT: 80
       DURATION: 0.1
@@ -13,16 +13,16 @@ services:
       # retries: 1 # number of retries before declaring container unhealth
     restartPolicy: "Always" # Always (Default), OnFailure, Never
 
-  - name: "Linux" # name of the service, uniquely identifies a service
-    image: "ubuntu"  # image to run in container
-    replicas: 5  # copys of the container to manage
-    env:  # environment variables
-      PORT: 80
-      DURATION: 0.1
-    healthCheck: # health check configuration
-      # command: " exit 1" # command to run inside container wrt /, must end in exit code 1 if failing
-      # interval: 30 # interval to run health check
-      # timeout: 5 # timeout for health check to be declared failed
-      # retries: 1 # number of retries before declaring container unhealth
-    restartPolicy: "Always" # Always (Default), OnFailure, Never
-    startCommand: "sleep infinity" # command to run when container starts overriding default command of the image
+  # - name: "Linux" # name of the service, uniquely identifies a service
+  #   image: "ubuntu"  # image to run in container
+  #   replicas: 5  # copys of the container to manage
+  #   env:  # environment variables
+  #     PORT: 80
+  #     DURATION: 0.1
+  #   healthCheck: # health check configuration
+  #     # command: " exit 1" # command to run inside container wrt /, must end in exit code 1 if failing
+  #     # interval: 30 # interval to run health check
+  #     # timeout: 5 # timeout for health check to be declared failed
+  #     # retries: 1 # number of retries before declaring container unhealth
+  #   restartPolicy: "Always" # Always (Default), OnFailure, Never
+  #   startCommand: "sleep infinity" # command to run when container starts overriding default command of the image

@@ -15,6 +15,7 @@ func ContainerDied(event events.Message) {
 	containerID := event.Actor.ID
 	container, tracked := IsVortexContainer(containerID)
 	if tracked {
+		fmt.Println("A Vortex container died")
 		vService, err := utils.GetServiceByName(container.Service)
 		if err != nil {
 			fmt.Println("Service not found!")
@@ -25,6 +26,7 @@ func ContainerDied(event events.Message) {
 			RecordCrash(event, container)
 			if !container.CrashData.IsInCrashLoop {
 				if container.CrashData.CrashCount <= state.MaxCrashCount {
+					fmt.Println("Replacing died container")
 					dockmaster.ReplaceDiedContainer(container)
 				} else {
 					s := utils.NewScheduler(1, container.CrashData.CurrentBackoffDuration, func() { dockmaster.ReplaceDiedContainer(container) })
@@ -47,7 +49,7 @@ func ContainerStopped(containerID string) {
 func IsVortexContainer(containerID string) (*types.ContainerConfig, bool) {
 	state.VortexContainers.Mu.RLock()
 	defer state.VortexContainers.Mu.RUnlock()
-
+	fmt.Println("current containers: ", state.VortexContainers.List)
 	for _, container := range state.VortexContainers.List {
 		if container.ID == containerID {
 			return container, true
